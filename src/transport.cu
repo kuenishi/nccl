@@ -71,6 +71,7 @@ static void StopProxy(struct transportProxyInfo* info) {
   struct ncclProxyArgs* fifoArgs = FifoGetNextArgs(info);
   fifoArgs->active = -1;
   FifoPushArgs(info);
+  info->proxyReady = 0;
 }
 
 #define RECV 0
