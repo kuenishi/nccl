@@ -395,12 +395,15 @@ ncclResult_t netSendProxy(struct ncclProxyArgs* args) {
           idle = 0;
         }
       }
-    } else while (tail < *prevTail && !ring->abortFlag) {
+    } else while (tail < *prevTail) {
         // Send through network
         int slot = tail%args->substeps;
         NCCLCHECK(ncclNetIsend(resources->netSendComm, localBuff+slot*sliceSize, sizesFifo[slot], ptrType, requests+slot));
         tail++;
         idle = 0;
+        if(ring->abortFlag) {
+          return ncclInternalError;
+        }
       }
     if (head < tail) {
       int done;
@@ -468,7 +471,7 @@ ncclResult_t netRecvProxy(struct ncclProxyArgs* args) {
   if (llMode == 0) {
     // Waiting for next opCount is only needed before writing nextTail.
     uint64_t* nextOpCount = resources->hostDevMem ? &resources->hostDevMem->opCount : &resources->hostRecvMem->opCount;
-    transportProxyWait([=] { return *nextOpCount >= args->opCount; });
+    transportProxyWait([=] { return (*nextOpCount >= args->opCount) || ring->abortFlag; });
   }
 
   while (head < end && !ring->abortFlag) {
@@ -499,7 +502,7 @@ ncclResult_t netRecvProxy(struct ncclProxyArgs* args) {
 
   // Wait for last ack and reset
   if (llMode == 0) {
-    transportProxyWait([=] { return *nextHead == head; });
+    transportProxyWait([=] { return ((*nextHead == head) || ring->abortFlag); });
     *nextHead = 0;
   }
 
