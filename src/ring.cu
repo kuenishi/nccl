@@ -46,6 +46,8 @@ ncclResult_t initRing(struct ncclComm* comm, int ringid) {
 
   // Per-ring operation list.
   NCCLCHECK(ncclCudaHostAlloc((void**)&ring->collectives, (void**)&ring->devCollectives, sizeof(struct ncclColl)*NCCL_MAX_OPS));
+
+  ring->abortFlag = 0;
   return ncclSuccess;
 }
 
@@ -62,6 +64,7 @@ ncclResult_t freeRing(struct ncclRing* ring) {
   NCCLCHECK(ncclCudaHostFree(ring->collectives));
 
   // Free transport proxy resources
+  ring->abortFlag = 1;
   NCCLCHECK(transportDestroyProxy(&ring->send));
   NCCLCHECK(transportDestroyProxy(&ring->recv));
   if (ring->send.transportResources) NCCLCHECK(ring->send.transport->send.free(ring->send.transportResources));
