@@ -157,6 +157,7 @@ struct ncclRing {
       int collCount;
       int collFifoHead; // Only used by GPU
       int collFifoTail; // Only used by CPU
+      volatile int abortFlag;
     };
     int data[0x80];
   };

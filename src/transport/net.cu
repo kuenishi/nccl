@@ -368,7 +368,7 @@ ncclResult_t netSendProxy(struct ncclProxyArgs* args) {
   // Update in case we skipped some collectives
   if (llMode == 0) resources->hostRecvMem->opCount = args->opCount;
 
-  while (head < end) {
+  while (head < end && !ring->abortFlag) {
     idle++;
     if (llMode) {
       if (tail < end && tail < head + args->substeps) {
@@ -383,7 +383,11 @@ ncclResult_t netSendProxy(struct ncclProxyArgs* args) {
           for (int i=0; i<nFifoLines; i++) {
             volatile uint32_t *f1 = &lines[i].flag1;
             volatile uint32_t *f2 = &lines[i].flag2;
-            while (f1[0] != flag || f2[0] != flag);
+            while (f1[0] != flag || f2[0] != flag) {
+              if (ring->abortFlag) {
+                return ncclInternalError;
+              }
+            }
           }
           NCCLCHECK(ncclNetIsend(resources->netSendComm, lines, size, ptrType, requests+slot));
           sizesFifo[slot] = size;
@@ -391,7 +395,7 @@ ncclResult_t netSendProxy(struct ncclProxyArgs* args) {
           idle = 0;
         }
       }
-    } else while (tail < *prevTail) {
+    } else while (tail < *prevTail && !ring->abortFlag) {
         // Send through network
         int slot = tail%args->substeps;
         NCCLCHECK(ncclNetIsend(resources->netSendComm, localBuff+slot*sliceSize, sizesFifo[slot], ptrType, requests+slot));
@@ -467,7 +471,7 @@ ncclResult_t netRecvProxy(struct ncclProxyArgs* args) {
     transportProxyWait([=] { return *nextOpCount >= args->opCount; });
   }
 
-  while (head < end) {
+  while (head < end && !ring->abortFlag) {
     idle++;
     if ((tail < head + args->substeps) && (tail < *nextHead + args->substeps) && (tail < end)) {
       int slot = tail%args->substeps;
