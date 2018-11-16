@@ -65,13 +65,14 @@ ncclResult_t freeRing(struct ncclRing* ring) {
   // Operation list
   NCCLCHECK(ncclCudaHostFree(ring->collectives));
 
-  // Free transport proxy resources
+  // Tell abort to blocking threads
   ring->abortFlag = 1;
   if (ring->send.transportResources && ring->send.transport->send.abort) {
     //NCCLCHECK(ring->send.transport->send.free(ring->send.transportResources));
     ring->send.transport->send.abort(ring->send.transportResources);
   }
 
+  // Free transport proxy resources
   NCCLCHECK(transportDestroyProxy(&ring->send));
   NCCLCHECK(transportDestroyProxy(&ring->recv));
   if (ring->send.transportResources) NCCLCHECK(ring->send.transport->send.free(ring->send.transportResources));

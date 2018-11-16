@@ -401,7 +401,7 @@ ncclResult_t netSendProxy(struct ncclProxyArgs* args) {
           idle = 0;
         }
       }
-    } else while (tail < *prevTail) {
+    } else while (tail < *prevTail && !ring->abortFlag) {
         // Send through network
         int slot = tail%args->substeps;
         NCCLCHECK(ncclNetIsend(resources->netSendComm, localBuff+slot*sliceSize, sizesFifo[slot], ptrType, requests+slot));
