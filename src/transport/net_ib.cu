@@ -312,6 +312,7 @@ struct ncclIbSendComm {
   uint32_t fifoHead;
   int fd;
   int ready;
+  volatile int abortFlag;
   struct ncclIbVerbs verbs;
   struct ibv_qp* qp;
   struct ibv_mr* fifoMr;
@@ -344,6 +345,10 @@ struct ncclIbRecvComm {
   struct ibv_qp* qp;
   struct ncclIbGpuFlush gpuFlush;
 };
+
+ncclResult_t ncclIbAbortFlag(struct ncclIbSendComm * comm, int flag) {
+  comm->abortFlag = flag;
+}
 
 ncclResult_t ncclIbInitVerbs(ibv_context* ctx, struct ncclIbVerbs* verbs) {
   NCCLCHECK(wrap_ibv_alloc_pd(&verbs->pd, ctx));
@@ -436,6 +441,7 @@ ncclResult_t ncclIbListen(int dev, void* opaqueHandle, void** listenComm) {
 ncclResult_t ncclIbConnect(int dev, void* opaqueHandle, void** sendComm) {
   struct ncclIbSendComm* comm;
   NCCLCHECK(ncclIbMalloc((void**)&comm, sizeof(struct ncclIbSendComm)));
+  comm->abortFlag = 0;
 
   struct ncclIbHandle* handle = (struct ncclIbHandle*) opaqueHandle;
   NCCLCHECK(connectAddress(&comm->fd, &handle->connectAddr));

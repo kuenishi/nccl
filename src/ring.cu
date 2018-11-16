@@ -9,6 +9,8 @@
 
 NCCL_PARAM(Buffsize, "BUFFSIZE", DEFAULT_BUFFER_SIZE_BYTES);
 
+extern ncclResult_t ncclIbAbortFlag(struct ncclIbSendComm * comm, int flag);
+
 ncclResult_t initRing(struct ncclComm* comm, int ringid) {
   struct ncclRing* ring = comm->rings+ringid;
   ring->id = ringid;
@@ -65,6 +67,12 @@ ncclResult_t freeRing(struct ncclRing* ring) {
 
   // Free transport proxy resources
   ring->abortFlag = 1;
+  if (ring->send.transportResources) {
+    //NCCLCHECK(ring->send.transport->send.free(ring->send.transportResources));
+    struct netSendResources* resources = (struct netSendResources*) (ring->send.transportResources);
+    ncclIbAbortFlag(resources->netSendComm, 1);
+  }
+    //if (ring->recv.transportResources) NCCLCHECK(ring->recv.transport->recv.free(ring->recv.transportResources));
   NCCLCHECK(transportDestroyProxy(&ring->send));
   NCCLCHECK(transportDestroyProxy(&ring->recv));
   if (ring->send.transportResources) NCCLCHECK(ring->send.transport->send.free(ring->send.transportResources));
