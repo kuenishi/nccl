@@ -606,6 +606,6 @@ struct ncclTransport p2pTransport = {
   p2pFillInfo,
   p2pCanConnect,
   p2pGetRings,
-  { p2pSendSetup, p2pSendConnect, p2pFree, NULL },
-  { p2pRecvSetup, p2pRecvConnect, p2pFree, NULL }
+  { p2pSendSetup, p2pSendConnect, p2pFree, NULL, NULL },
+  { p2pRecvSetup, p2pRecvConnect, p2pFree, NULL, NULL }
 };

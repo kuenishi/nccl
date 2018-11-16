@@ -265,6 +265,6 @@ struct ncclTransport shmTransport = {
   shmFillInfo,
   shmCanConnect,
   shmGetRings,
-  { shmSendSetup, shmSendConnect, shmSendFree, NULL },
-  { shmRecvSetup, shmRecvConnect, shmRecvFree, NULL }
+  { shmSendSetup, shmSendConnect, shmSendFree, NULL, NULL },
+  { shmRecvSetup, shmRecvConnect, shmRecvFree, NULL, NULL }
 };

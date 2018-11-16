@@ -312,10 +312,10 @@ struct ncclIbSendComm {
   uint32_t fifoHead;
   int fd;
   int ready;
-  volatile int abortFlag;
   struct ncclIbVerbs verbs;
   struct ibv_qp* qp;
   struct ibv_mr* fifoMr;
+  volatile int abortFlag;
 };
 
 struct ncclIbGpuFlush {
@@ -346,8 +346,10 @@ struct ncclIbRecvComm {
   struct ncclIbGpuFlush gpuFlush;
 };
 
-ncclResult_t ncclIbAbortFlag(struct ncclIbSendComm * comm, int flag) {
+ncclResult_t ncclIbAbortFlag(void * ptr, int flag) {
+  struct ncclIbSendComm* comm = (struct ncclIbSendComm*)ptr;
   comm->abortFlag = flag;
+  return ncclSuccess;
 }
 
 ncclResult_t ncclIbInitVerbs(ibv_context* ctx, struct ncclIbVerbs* verbs) {
@@ -689,7 +691,13 @@ ncclResult_t ncclIbIsend(void* sendComm, void* data, int size, int type, void** 
   // Wait for receiver to have posted the recv
   volatile struct ncclIbSendFifo* slot = comm->fifo + (comm->fifoHead%MAX_REQUESTS);
   volatile uint32_t * readyPtr = &slot->ready;
-  while (*readyPtr == 0) sched_yield();
+  while (*readyPtr == 0) {
+    sched_yield();
+    if (comm->abortFlag) {
+      WARN("NET/IB : aborted");
+      return ncclInternalError;
+    }
+  }
 #if USE_RDMA_WRITE
   __sync_synchronize(); // order the readyPtr load against rkey load below
   // Sanity checks to catch user collective call count/size mismatches

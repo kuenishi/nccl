@@ -336,6 +336,12 @@ ncclResult_t netRecvFree(void* transportResources) {
   return ncclSuccess;
 }
 
+extern ncclResult_t ncclIbAbortFlag(void *, int);
+ncclResult_t netSendAbort(void* transportResources) {
+  struct netSendResources* resources = (struct netSendResources*)transportResources;
+  return ncclIbAbortFlag(resources->netSendComm, 1);
+}
+
 ncclResult_t netSendProxy(struct ncclProxyArgs* args) {
   struct ncclRing* ring = args->ring;
   struct netSendResources* resources = (struct netSendResources*) (ring->send.transportResources);
@@ -523,6 +529,6 @@ struct ncclTransport netTransport = {
   netFillInfo,
   netCanConnect,
   netGetRings,
-  { netSendSetup, netSendConnect, netSendFree, netSendProxy },
-  { netRecvSetup, netRecvConnect, netRecvFree, netRecvProxy }
+  { netSendSetup, netSendConnect, netSendFree, netSendProxy, netSendAbort },
+  { netRecvSetup, netRecvConnect, netRecvFree, netRecvProxy, NULL }
 };

@@ -49,6 +49,7 @@ struct ncclTransportComm {
   ncclResult_t (*connect)(struct ncclConnect*, struct ncclConnector*);
   ncclResult_t (*free)(void*);
   ncclResult_t (*proxy)(struct ncclProxyArgs*);
+  ncclResult_t (*abort)(void*);
 };
 
 struct ncclTransport {

@@ -67,12 +67,11 @@ ncclResult_t freeRing(struct ncclRing* ring) {
 
   // Free transport proxy resources
   ring->abortFlag = 1;
-  if (ring->send.transportResources) {
+  if (ring->send.transportResources && ring->send.transport->send.abort) {
     //NCCLCHECK(ring->send.transport->send.free(ring->send.transportResources));
-    struct netSendResources* resources = (struct netSendResources*) (ring->send.transportResources);
-    ncclIbAbortFlag(resources->netSendComm, 1);
+    ring->send.transport->send.abort(ring->send.transportResources);
   }
-    //if (ring->recv.transportResources) NCCLCHECK(ring->recv.transport->recv.free(ring->recv.transportResources));
+
   NCCLCHECK(transportDestroyProxy(&ring->send));
   NCCLCHECK(transportDestroyProxy(&ring->recv));
   if (ring->send.transportResources) NCCLCHECK(ring->send.transport->send.free(ring->send.transportResources));
